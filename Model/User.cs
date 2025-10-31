@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TeamTaskManager
+namespace TeamTaskManager.Model
 {
     public class User
     {

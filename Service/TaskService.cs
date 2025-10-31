@@ -1,10 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-
-namespace TeamTaskManager
+using TeamTaskManager.Model;
+using TeamTaskManager.Repository;
+using Task = TeamTaskManager.Model.Task;
+using TaskStatus = TeamTaskManager.Model.TaskStatus;
+namespace TeamTaskManager.Service
 {
     public class TaskService
     {

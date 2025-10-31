@@ -1,6 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using TeamTaskManager.Model;
+using TeamTaskManager.Repository;
+using TeamTaskManager.Service;
+using Task = TeamTaskManager.Model.Task;
+using TaskStatus = TeamTaskManager.Model.TaskStatus;
 
 namespace TeamTaskManager
 {

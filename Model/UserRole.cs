@@ -4,13 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TeamTaskManager
+namespace TeamTaskManager.Model
 {
-    public enum TaskPriority
+    public enum UserRole
     {
-        Low = 1,
-        Medium = 2,
-        High = 3,
-        Critical = 4
+        Admin = 1,
+        Manager = 2,
+        Developer = 3
     }
 }
