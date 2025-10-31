@@ -15,7 +15,7 @@ namespace TeamTaskManager.Repository
         public void AddTask(Task task)
         {
             task.Id = nextId++;
-            task.CreatedDate = DateTime.Now;
+            if(task.CreatedDate == null)task.CreatedDate = DateTime.Now;
             tasks.Add(task);
         }
 
