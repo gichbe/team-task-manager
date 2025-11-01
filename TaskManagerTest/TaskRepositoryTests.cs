@@ -75,7 +75,26 @@ namespace TaskManagerTest
             Assert.AreEqual(TaskStatus.ToDo, retrievedTask.Status);
             Assert.AreEqual(3, retrievedTask.AssignedToUserId);
             Assert.AreEqual(2, retrievedTask.CreatedByUserId);
+            
             CollectionAssert.Contains(_repo.GetAllTasks(), retrievedTask);
+        }
+        [TestMethod]
+        public void AddTask_NullTask_ShouldThrowException()
+        {
+            Assert.ThrowsException<ArgumentNullException>(() => _repo.AddTask(null));
+        }
+        [TestMethod]
+        public void AddTask_MissingPriority_ShouldThrowException()
+        {
+            var task = new Task
+            {
+                Description = "Desc",
+                Status = TaskStatus.ToDo,
+                AssignedToUserId = 1,
+                CreatedByUserId = 1,
+                CreatedDate = DateTime.Now
+            };
+            Assert.ThrowsException<InvalidDataException>(() => _repo.AddTask(task));
         }
 
         [TestMethod]
@@ -94,6 +113,15 @@ namespace TaskManagerTest
             Assert.AreEqual(1, task.CreatedByUserId);
             Assert.AreEqual(new DateTime(2025, 10, 30), task.CreatedDate);//radi i kod datuma Equals
         }
+
+        [TestMethod]
+        public void GetTaskById_NonExistentId_ShouldReturnNull()
+        {
+            var task = _repo.GetTaskById(999);
+            Assert.IsNull(task);
+        }
+
+
         [TestMethod]
         public void GetAllTasks_CallTheMethod_ShouldReturnAllTasks()
         {
@@ -113,6 +141,13 @@ namespace TaskManagerTest
             tasks = _repo.GetAllTasks();
             Assert.AreEqual(3, tasks.Count);
         }
+        [TestMethod]
+        public void GetAllTasks_EmptyRepository_ShouldReturnEmptyList()
+        {
+            var emptyRepo = new InMemoryTaskRepository();
+            var tasks = emptyRepo.GetAllTasks();
+            Assert.AreEqual(0, tasks.Count);
+        }
 
         [TestMethod]
         public void DeleteTask_CallTheMethod_ShouldDeleteTask()
@@ -122,6 +157,12 @@ namespace TaskManagerTest
             var deletedTask = _repo.GetTaskById(1);
             Assert.IsNull(deletedTask);
 
+        }
+        [TestMethod]
+        public void DeleteTask_NonExistentId_ShouldReturnFalse()
+        {
+            var result = _repo.DeleteTask(999);
+            Assert.IsFalse(result);
         }
 
         [TestMethod]

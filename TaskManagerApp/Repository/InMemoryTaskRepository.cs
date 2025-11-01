@@ -14,8 +14,11 @@ namespace TeamTaskManager.Repository
 
         public void AddTask(Task task)
         {
+            if(task==null)throw  new ArgumentNullException(nameof(task));
             task.Id = nextId++;
-            if(task.CreatedDate == null)task.CreatedDate = DateTime.Now;
+            Console.WriteLine(task.Priority);
+            if(task.Title ==null)throw new InvalidDataException("Title must be set.");
+            if (task.CreatedDate == null)task.CreatedDate = DateTime.Now;
             tasks.Add(task);
         }
 
