@@ -12,10 +12,10 @@ namespace TaskManagerTest
     [TestClass]
     public sealed class TaskRepositoryTests
     {
-        private static InMemoryTaskRepository _repo;
+        private InMemoryTaskRepository _repo;
 
-        [ClassInitialize]
-        public static void SetUp(TestContext testContext) //zahtijeva ovo TestContext testContext
+        [TestInitialize]
+        public  void SetUp() //zahtijeva ovo TestContext testContext
         {
             _repo = new InMemoryTaskRepository();
 
@@ -43,13 +43,15 @@ namespace TaskManagerTest
             });
         }
 
-        [ClassCleanup]
-        public static void TearDown()
+
+        [TestCleanup]
+        public  void TearDown()
         {
             _repo = null;
         }
 
         [TestMethod]
+        [Priority(1)]
         public void AddTask_CallTheMethod_ShouldAddTask()
         {
             var newTask = new Task
@@ -65,6 +67,7 @@ namespace TaskManagerTest
             _repo.AddTask(newTask);
             var retrievedTask = _repo.GetTaskById(3);
 
+            StringAssert.StartsWith(retrievedTask.Title, "Task");
             Assert.IsNotNull(retrievedTask);
             Assert.AreEqual("Task 3", retrievedTask.Title);
             Assert.AreEqual("Desc 3", retrievedTask.Description);
@@ -72,9 +75,11 @@ namespace TaskManagerTest
             Assert.AreEqual(TaskStatus.ToDo, retrievedTask.Status);
             Assert.AreEqual(3, retrievedTask.AssignedToUserId);
             Assert.AreEqual(2, retrievedTask.CreatedByUserId);
+            CollectionAssert.Contains(_repo.GetAllTasks(), retrievedTask);
         }
 
         [TestMethod]
+        [Timeout(2000)]
         public void GetTaskById_CallTheMethod_ShouldReturn()
         {
             var task = _repo.GetTaskById(2);

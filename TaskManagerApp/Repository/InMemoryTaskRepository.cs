@@ -10,7 +10,7 @@ namespace TeamTaskManager.Repository
     public class InMemoryTaskRepository : ITaskRepository
     {
         private List<Task> tasks = new List<Task>();
-        private int nextId = 1;
+        private  int nextId = 1;
 
         public void AddTask(Task task)
         {

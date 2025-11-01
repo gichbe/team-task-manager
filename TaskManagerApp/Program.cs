@@ -47,7 +47,8 @@ namespace TeamTaskManager
                 Console.WriteLine("8. Pregled zadataka van roka");
                 Console.WriteLine("9. Napredna pretraga i sortiranje");
                 Console.WriteLine("10. Izvještaj (statistika)");
-                Console.WriteLine("11. Izlaz");
+                Console.WriteLine("11. Masovna promjena statusa");
+                Console.WriteLine("12. Izlaz");
                 Console.Write("\nOdabir: ");
 
                 string choice = Console.ReadLine();
@@ -64,8 +65,8 @@ namespace TeamTaskManager
                     case "8": ViewOverdueTasks(); break;
                     case "9": AdvancedSearchAndSort(); break;
                     case "10": ShowReport(); break;
-
-                    case "11": running = false; break;
+                    case "11": BulkUpdateTasks(); break;
+                    case "12": running = false; break;
 
                     default: 
                         Console.WriteLine("Neispravan unos!");
@@ -364,152 +365,135 @@ namespace TeamTaskManager
         static void AdvancedSearchAndSort()
         {
             Console.Clear();
-            Console.WriteLine("═══════════════════════════════════════════");
-            Console.WriteLine("   NAPREDNA PRETRAGA I SORTIRANJE");
-            Console.WriteLine("═══════════════════════════════════════════\n");
+            Console.WriteLine("NAPREDNA PRETRAGA");
 
-            // 1) Učitamo sve zadatke iz repozitorija
-            var tasks = taskService.GetRepository().GetAllTasks();
+            var options = new TaskSearchOptions();
 
-            // 2) Filtriranje po tekstu
-            Console.Write("Filtriraj po tekstu u nazivu/opisu (Enter za preskoči): ");
-            string textFilter = Console.ReadLine();
-            if (!string.IsNullOrWhiteSpace(textFilter))
+            Console.Write("Tekst (Enter za preskok): ");
+            var text = Console.ReadLine();
+            options.Text = string.IsNullOrWhiteSpace(text) ? null : text;
+
+            Console.Write("ID korisnika (Enter za preskok): ");
+            var assignee = Console.ReadLine();
+            if (int.TryParse(assignee, out int assigneeId))
+                options.AssignedToUserId = assigneeId;
+
+            Console.Write("Prioritet (1-4, Enter za preskok): ");
+            var prio = Console.ReadLine();
+            if (int.TryParse(prio, out int prioNum) && prioNum >= 1 && prioNum <= 4)
+                options.Priority = (TaskPriority)prioNum;
+
+            Console.Write("Samo neistekli rok? (d/n): ");
+            options.OnlyNotOverdue = Console.ReadLine()?.ToLower() == "d";
+
+            Console.WriteLine("Sortiranje: 1=rok, 2=prioritet, 3=noviji");
+            var sort = Console.ReadLine();
+            options.SortBy = sort switch
             {
-                tasks = tasks
-                    .Where(t => (t.Title?.IndexOf(textFilter, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                                (t.Description?.IndexOf(textFilter, StringComparison.OrdinalIgnoreCase) >= 0))
-                    .ToList();
-            }
+                "1" => TaskSortOption.ByDueDateAsc,
+                "2" => TaskSortOption.ByPriorityDesc,
+                "3" => TaskSortOption.ByCreatedDateDesc,
+                _ => TaskSortOption.None
+            };
 
-            // 3) Filtriranje po korisniku kojem je dodijeljen
-            Console.Write("Filtriraj po ID korisnika kojem je dodijeljen (Enter za preskoči): ");
-            string assigneeInput = Console.ReadLine();
-            if (int.TryParse(assigneeInput, out int assigneeId))
-            {
-                tasks = tasks.Where(t => t.AssignedToUserId == assigneeId).ToList();
-            }
-
-            // 4) Filtriranje po prioritetu
-            Console.Write("Filtriraj po prioritetu (1=Nizak,2=Srednji,3=Visok,4=Kritičan, Enter za preskoči): ");
-            string prioInput = Console.ReadLine();
-            if (int.TryParse(prioInput, out int prioNum) && prioNum >= 1 && prioNum <= 4)
-            {
-                var prio = (TaskPriority)prioNum;
-                tasks = tasks.Where(t => t.Priority == prio).ToList();
-            }
-
-            // 5) Filtriranje samo zadataka unutar roka
-            Console.Write("Prikaži samo zadatke kojima rok NIJE istekao? (d/n): ");
-            string onlyNotOverdue = Console.ReadLine();
-            if (onlyNotOverdue?.ToLower() == "d")
-            {
-                tasks = tasks.Where(t => !t.DueDate.HasValue || t.DueDate.Value >= DateTime.Now || t.Status == TaskStatus.Done)
-                             .ToList();
-            }
-
-            // 6) Sortiranje
-            Console.WriteLine("\nSortiranje:");
-            Console.WriteLine("1. Po roku (rast.)");
-            Console.WriteLine("2. Po prioritetu (opadajuće)");
-            Console.WriteLine("3. Po datumu kreiranja (noviji prvi)");
-            Console.WriteLine("4. Bez sortiranja");
-            Console.Write("Odabir: ");
-            string sortChoice = Console.ReadLine();
-
-            switch (sortChoice)
-            {
-                case "1":
-                    tasks = tasks.OrderBy(t => t.DueDate ?? DateTime.MaxValue).ToList();
-                    break;
-                case "2":
-                    tasks = tasks.OrderByDescending(t => t.Priority).ToList();
-                    break;
-                case "3":
-                    tasks = tasks.OrderByDescending(t => t.CreatedDate).ToList();
-                    break;
-            }
-
+            var tasks = taskService.SearchTasks(options);
             Console.WriteLine();
             DisplayTasks(tasks);
             Console.ReadKey();
         }
-        static void ShowReport()
+        static void BulkUpdateTasks()
         {
             Console.Clear();
             Console.WriteLine("═══════════════════════════════════════════");
-            Console.WriteLine("               IZVJEŠTAJ");
+            Console.WriteLine("       MASOVNA PROMJENA STATUSA");
             Console.WriteLine("═══════════════════════════════════════════\n");
 
-            var tasks = taskService.GetRepository().GetAllTasks();
-            var users = taskService.GetAllUsers();
+            Console.Write("Unesi ID-jeve zadataka (npr. 1,2,3): ");
+            var input = Console.ReadLine();
 
-            int total = tasks.Count;
-            int todo = tasks.Count(t => t.Status == TaskStatus.ToDo);
-            int inProgress = tasks.Count(t => t.Status == TaskStatus.InProgress);
-            int testing = tasks.Count(t => t.Status == TaskStatus.Testing);
-            int done = tasks.Count(t => t.Status == TaskStatus.Done);
+            // Parsiranje unosa
+            var ids = input.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                           .Select(x => int.Parse(x.Trim()))
+                           .ToList();
 
-            int low = tasks.Count(t => t.Priority == TaskPriority.Low);
-            int medium = tasks.Count(t => t.Priority == TaskPriority.Medium);
-            int high = tasks.Count(t => t.Priority == TaskPriority.High);
-            int critical = tasks.Count(t => t.Priority == TaskPriority.Critical);
+            Console.WriteLine("\nNovi status: ");
+            Console.WriteLine("1. ToDo");
+            Console.WriteLine("2. U toku");
+            Console.WriteLine("3. Testiranje");
+            Console.WriteLine("4. Završeno");
+            Console.Write("Odabir: ");
+            var statusChoice = int.Parse(Console.ReadLine());
 
-            int overdue = tasks.Count(t =>
-                t.DueDate.HasValue &&
-                t.DueDate.Value < DateTime.Now &&
-                t.Status != TaskStatus.Done
-            );
+            var status = (TaskStatus)statusChoice;
 
-            Console.WriteLine($"Ukupan broj zadataka: {total}\n");
-
-            Console.WriteLine("Po statusu:");
-            Console.WriteLine($"  ToDo:       {todo}");
-            Console.WriteLine($"  U toku:     {inProgress}");
-            Console.WriteLine($"  Testiranje: {testing}");
-            Console.WriteLine($"  Završeno:   {done}\n");
-
-            Console.WriteLine("Po prioritetu:");
-            Console.WriteLine($"  Nizak:      {low}");
-            Console.WriteLine($"  Srednji:    {medium}");
-            Console.WriteLine($"  Visok:      {high}");
-            Console.WriteLine($"  Kritičan:   {critical}\n");
-
-            Console.WriteLine($"Zadaci VAN roka: {overdue}\n");
-
-            // TOP korisnici po broju zadataka
-            Console.WriteLine("Zadaci po korisniku (TOP 5):");
-
-            var tasksByUser = tasks
-                .GroupBy(t => t.AssignedToUserId)
-                .Select(g => new
-                {
-                    UserId = g.Key,
-                    Count = g.Count()
-                })
-                .OrderByDescending(x => x.Count)
-                .Take(5)
-                .ToList();
-
-            if (tasksByUser.Count == 0)
+            try
             {
-                Console.WriteLine("  Nema zadataka dodijeljenih korisnicima.");
+                int updated = taskService.BulkUpdateStatus(ids, status);
+                Console.WriteLine($"\n✓ Uspješno ažurirano {updated} zadataka.");
             }
-            else
+            catch (ArgumentException ex)
             {
-                foreach (var item in tasksByUser)
-                {
-                    var user = users.FirstOrDefault(u => u.Id == item.UserId);
-                    string name = user != null ? user.Name : "Nepoznat korisnik";
-                    Console.WriteLine($"  {name}: {item.Count}");
-                }
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"✗ Greška: {ex.Message}");
+                Console.ResetColor();
             }
-
-            // Možemo dodati i "progres" - procenat završenih
-            double progress = total == 0 ? 0 : (double)done / total * 100.0;
-            Console.WriteLine($"\nProgres projekta: {progress:0.0}% završeno");
+            catch (InvalidOperationException ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"✗ Greška: {ex.Message}");
+                Console.ResetColor();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"✗ Greška: {ex.Message}");
+                Console.ResetColor();
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"✗ Neočekivana greška: {ex.Message}");
+                Console.ResetColor();
+            }
 
             Console.WriteLine("\nPritisni bilo koji taster za povratak...");
+            Console.ReadKey();
+        }
+
+        static void ShowReport()
+        {
+            Console.Clear();
+            Console.WriteLine("IZVJEŠTAJ\n");
+
+            var report = taskService.GetReport();
+            var users = taskService.GetAllUsers();
+
+            Console.WriteLine($"Ukupan broj zadataka: {report.Total}\n");
+            Console.WriteLine("Po statusu:");
+            Console.WriteLine($"  ToDo:       {report.Todo}");
+            Console.WriteLine($"  U toku:     {report.InProgress}");
+            Console.WriteLine($"  Testiranje: {report.Testing}");
+            Console.WriteLine($"  Završeno:   {report.Done}\n");
+
+            Console.WriteLine("Po prioritetu:");
+            Console.WriteLine($"  Nizak:      {report.Low}");
+            Console.WriteLine($"  Srednji:    {report.Medium}");
+            Console.WriteLine($"  Visok:      {report.High}");
+            Console.WriteLine($"  Kritičan:   {report.Critical}\n");
+
+            Console.WriteLine($"Zadaci VAN roka: {report.Overdue}\n");
+
+            Console.WriteLine("Zadaci po korisniku (TOP 5):");
+            foreach (var item in report.TasksByUser.Take(5))
+            {
+                var user = users.FirstOrDefault(u => u.Id == item.UserId);
+                Console.WriteLine($"  {(user?.Name ?? "Nepoznat")}: {item.Count}");
+            }
+
+            double progress = report.Total == 0 ? 0 : (double)report.Done / report.Total * 100.0;
+            Console.WriteLine($"\nProgres projekta: {progress:0.0}% završeno");
+
+            Console.WriteLine("\nPritisni bilo koji taster...");
             Console.ReadKey();
         }
 
