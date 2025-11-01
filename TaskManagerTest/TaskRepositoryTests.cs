@@ -1,6 +1,7 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using TeamTaskManager.Model;          
 using TeamTaskManager.Repository;
 using Task = TeamTaskManager.Model.Task;
@@ -18,10 +19,9 @@ namespace TaskManagerTest
         {
             _repo = new InMemoryTaskRepository();
 
-            
+
             _repo.AddTask(new Task
             {
-                Id = 1,
                 Title = "Task 1",
                 Description = "Desc 1",
                 Priority = TaskPriority.Low,
@@ -33,7 +33,6 @@ namespace TaskManagerTest
 
             _repo.AddTask(new Task
             {
-                Id = 2,
                 Title = "Task 2",
                 Description = "Desc 2",
                 Priority = TaskPriority.High,
@@ -51,11 +50,36 @@ namespace TaskManagerTest
         }
 
         [TestMethod]
+        public void AddTask_CallTheMethod_ShouldAddTask()
+        {
+            var newTask = new Task
+            {
+                Title = "Task 3",
+                Description = "Desc 3",
+                Priority = TaskPriority.Medium,
+                Status = TaskStatus.ToDo,
+                AssignedToUserId = 3,
+                CreatedByUserId = 2,
+                CreatedDate = DateTime.Now
+            };
+            _repo.AddTask(newTask);
+            var retrievedTask = _repo.GetTaskById(3);
+
+            Assert.IsNotNull(retrievedTask);
+            Assert.AreEqual("Task 3", retrievedTask.Title);
+            Assert.AreEqual("Desc 3", retrievedTask.Description);
+            Assert.AreEqual(TaskPriority.Medium, retrievedTask.Priority);
+            Assert.AreEqual(TaskStatus.ToDo, retrievedTask.Status);
+            Assert.AreEqual(3, retrievedTask.AssignedToUserId);
+            Assert.AreEqual(2, retrievedTask.CreatedByUserId);
+        }
+
+        [TestMethod]
         public void GetTaskById_CallTheMethod_ShouldReturn()
         {
             var task = _repo.GetTaskById(2);
 
-          
+
             Assert.IsNotNull(task);
             Assert.AreEqual("Task 2", task.Title);
             Assert.AreEqual("Desc 2", task.Description);
@@ -65,6 +89,51 @@ namespace TaskManagerTest
             Assert.AreEqual(1, task.CreatedByUserId);
             Assert.AreEqual(new DateTime(2025, 10, 30), task.CreatedDate);//radi i kod datuma Equals
         }
+        [TestMethod]
+        public void GetAllTasks_CallTheMethod_ShouldReturnAllTasks()
+        {
+            var tasks = _repo.GetAllTasks();
+            Assert.AreEqual(2, tasks.Count);
+            _repo.AddTask(new Task
+            {
+                Title = "Task 3",
+                Description = "Desc 3",
+                Priority = TaskPriority.Medium,
+                Status = TaskStatus.ToDo,
+                AssignedToUserId = 3,
+                CreatedByUserId = 2,
+                CreatedDate = DateTime.Now
+            });
 
+            tasks = _repo.GetAllTasks();
+            Assert.AreEqual(3, tasks.Count);
+        }
+
+        [TestMethod]
+        public void DeleteTask_CallTheMethod_ShouldDeleteTask()
+        {
+            var result = _repo.DeleteTask(1);
+            Assert.IsTrue(result);
+            var deletedTask = _repo.GetTaskById(1);
+            Assert.IsNull(deletedTask);
+
+        }
+
+        [TestMethod]
+        public void UpdateTask_CallTheMethod_ShouldUpdateTask()
+        {
+            var taskToUpdate = _repo.GetTaskById(2);
+            taskToUpdate.Title = "Updated Task 2";
+            taskToUpdate.Status = TaskStatus.Done;
+            _repo.UpdateTask(taskToUpdate);
+            var updatedTask = _repo.GetTaskById(2);
+            Assert.AreEqual("Updated Task 2", taskToUpdate.Title);
+            Assert.AreEqual("Desc 2", taskToUpdate.Description);
+            Assert.AreEqual(TaskPriority.High, taskToUpdate.Priority);
+            Assert.AreEqual(TaskStatus.Done, taskToUpdate.Status);
+            Assert.AreEqual(2, taskToUpdate.AssignedToUserId);
+            Assert.AreEqual(1, taskToUpdate.CreatedByUserId);
+            Assert.AreEqual(new DateTime(2025, 10, 30), taskToUpdate.CreatedDate);
+        }
     }
 }
