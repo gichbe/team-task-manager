@@ -13,6 +13,7 @@ namespace TeamTaskManager
     class Program
     {
         static TaskService taskService;
+        static TaskAnalyzer taskAnalyzer;
         static User currentUser;
 
         static void Main(string[] args)
@@ -21,6 +22,8 @@ namespace TeamTaskManager
             
             ITaskRepository repository = new InMemoryTaskRepository();
             taskService = new TaskService(repository);
+            taskAnalyzer = new TaskAnalyzer(repository);
+
 
             // Demo podatci
             InitializeDemoData();
@@ -48,11 +51,16 @@ namespace TeamTaskManager
                 Console.WriteLine("9. Napredna pretraga i sortiranje");
                 Console.WriteLine("10. Izvještaj (statistika)");
                 Console.WriteLine("11. Masovna promjena statusa");
-                Console.WriteLine("12. Izlaz");
+                Console.WriteLine("12. Evaluacija zadatka");
+                Console.WriteLine("13. Analiza performansi tima");
+                Console.WriteLine("14. Sažetak zadataka po korisniku");
+                Console.WriteLine("15. Predikcija rizika kašnjenja");
+                Console.WriteLine("16. Izlaz");
                 Console.Write("\nOdabir: ");
 
+
                 string choice = Console.ReadLine();
-                
+
                 switch (choice)
                 {
                     case "1": CreateNewTask(); break;
@@ -66,13 +74,17 @@ namespace TeamTaskManager
                     case "9": AdvancedSearchAndSort(); break;
                     case "10": ShowReport(); break;
                     case "11": BulkUpdateTasks(); break;
-                    case "12": running = false; break;
-
-                    default: 
+                    case "12": EvaluateTaskStatusUI(); break;
+                    case "13": AnalyzeTeamPerformanceUI(); break;
+                    case "14": GetUserSummaryUI(); break;
+                    case "15": PredictDelayRiskUI(); break;
+                    case "16": running = false; break; // ✅ Izlaz sada posljednji
+                    default:
                         Console.WriteLine("Neispravan unos!");
                         Console.ReadKey();
                         break;
                 }
+
             }
         }
 
@@ -494,6 +506,77 @@ namespace TeamTaskManager
             Console.WriteLine($"\nProgres projekta: {progress:0.0}% završeno");
 
             Console.WriteLine("\nPritisni bilo koji taster...");
+            Console.ReadKey();
+        }
+
+        static void EvaluateTaskStatusUI()
+        {
+            Console.Clear();
+            Console.WriteLine("═══════════════════════════════════════════");
+            Console.WriteLine("   EVALUACIJA ZADATKA");
+            Console.WriteLine("═══════════════════════════════════════════\n");
+
+            Console.Write("Unesi ID zadatka: ");
+            if (int.TryParse(Console.ReadLine(), out int id))
+            {
+                var task = taskService.GetTaskById(id);
+                if (task != null)
+                {
+                    string status = taskAnalyzer.EvaluateTaskStatus(task);
+                    Console.WriteLine($"\nRezultat evaluacije: {status}");
+                }
+                else Console.WriteLine("✗ Zadatak ne postoji!");
+            }
+            Console.ReadKey();
+        }
+
+        static void AnalyzeTeamPerformanceUI()
+        {
+            Console.Clear();
+            Console.WriteLine("═══════════════════════════════════════════");
+            Console.WriteLine("   ANALIZA TIMA");
+            Console.WriteLine("═══════════════════════════════════════════\n");
+
+            string result = taskAnalyzer.AnalyzeTeamPerformance();
+            Console.WriteLine(result);
+            Console.ReadKey();
+        }
+
+        static void GetUserSummaryUI()
+        {
+            Console.Clear();
+            Console.WriteLine("═══════════════════════════════════════════");
+            Console.WriteLine("   SAŽETAK ZADATAKA PO KORISNIKU");
+            Console.WriteLine("═══════════════════════════════════════════\n");
+
+            Console.Write("Unesi ID korisnika (1–4): ");
+            if (int.TryParse(Console.ReadLine(), out int userId))
+            {
+                var summary = taskAnalyzer.GetTasksSummaryForUser(userId);
+                foreach (var kv in summary)
+                    Console.WriteLine($"{kv.Key}: {kv.Value}");
+            }
+            Console.ReadKey();
+        }
+
+        static void PredictDelayRiskUI()
+        {
+            Console.Clear();
+            Console.WriteLine("═══════════════════════════════════════════");
+            Console.WriteLine("   PREDIKCIJA RIZIKA KAŠNJENJA");
+            Console.WriteLine("═══════════════════════════════════════════\n");
+
+            Console.Write("Unesi ID zadatka: ");
+            if (int.TryParse(Console.ReadLine(), out int id))
+            {
+                var task = taskService.GetTaskById(id);
+                if (task != null)
+                {
+                    string risk = taskAnalyzer.PredictDelayRisk(task);
+                    Console.WriteLine($"\nRizik: {risk}");
+                }
+                else Console.WriteLine("✗ Zadatak ne postoji!");
+            }
             Console.ReadKey();
         }
 
