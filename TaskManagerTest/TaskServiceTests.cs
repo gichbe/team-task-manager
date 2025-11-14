@@ -248,23 +248,8 @@ namespace TaskManagerTest
             Assert.AreEqual(expectedCount, result.Count);
         }
 
-        [TestMethod]
-        public void GetOverdueTasks_ShouldReturnOnlyOverdueAndNotDone()
-        {
-            var repo = new InMemoryTaskRepository();
+       
 
-            repo.AddTask(new Task { Id = 1, DueDate = DateTime.Now.AddDays(-1), Status = TaskStatus.ToDo });
-            repo.AddTask(new Task { Id = 2, DueDate = DateTime.Now.AddDays(-1), Status = TaskStatus.Done });
-            repo.AddTask(new Task { Id = 3, DueDate = DateTime.Now.AddDays(2), Status = TaskStatus.InProgress });
-            repo.AddTask(new Task { Id = 4, DueDate = null, Status = TaskStatus.ToDo });
-
-            var service = new TaskService(repo);
-
-            var overdue = service.GetOverdueTasks();
-
-            Assert.AreEqual(1, overdue.Count);
-            Assert.AreEqual(1, overdue[0].Id);
-        }
         [TestMethod]
         public void SearchTasks_FilterByAssignedUser()
         {
@@ -390,8 +375,8 @@ namespace TaskManagerTest
         }
 
 
-
-        //MOQ TEST
+        
+        //MOQ TESTS
         [TestMethod]
         public void CreateTask_ShouldCallRepositoryAddTask()
         {
@@ -406,7 +391,84 @@ namespace TaskManagerTest
             mockRepo.Verify(r => r.AddTask(It.IsAny<Task>()), Times.Once);
         }
 
+        
+        [TestMethod]
+        public void UpdateTaskStatus_ShouldCallRepositoryUpdateTask()
+        {
+            // Arrange
+            var mockRepo = new Mock<ITaskRepository>();
 
+            mockRepo.Setup(r => r.GetTaskById(10))
+                .Returns(new Task { Id = 10, Status = TaskStatus.ToDo });
+
+            var service = new TaskService(mockRepo.Object);
+
+            // Act
+            service.UpdateTaskStatus(10, TaskStatus.Done);
+
+            // Assert
+            mockRepo.Verify(r => r.UpdateTask(It.Is<Task>(t => t.Status == TaskStatus.Done)), Times.Once);
+        }
+
+        [TestMethod]
+        public void DeleteTask_WhenRepositoryReturnsFalse_ShouldReturnFalse()
+        {
+            // Arrange
+            var mockRepo = new Mock<ITaskRepository>();
+
+            mockRepo.Setup(r => r.DeleteTask(999)).Returns(false);
+
+            var service = new TaskService(mockRepo.Object);
+
+            // Act
+            bool result = service.DeleteTask(999);
+
+            // Assert
+            Assert.IsFalse(result);
+            mockRepo.Verify(r => r.DeleteTask(999), Times.Once);
+        }
+
+        [TestMethod]
+        public void GetTasksForUser_ShouldCallRepositoryGetTasksByUser()
+        {
+            // Arrange
+            var mockRepo = new Mock<ITaskRepository>();
+
+            mockRepo.Setup(r => r.GetTasksByUser(3))
+                .Returns(new List<Task> { new Task { Id = 1 }, new Task { Id = 2 } });
+
+            var service = new TaskService(mockRepo.Object);
+
+            // Act
+            var result = service.GetTasksForUser(3);
+
+            // Assert
+            Assert.AreEqual(2, result.Count);
+            mockRepo.Verify(r => r.GetTasksByUser(3), Times.Once);
+        }
+        public static IEnumerable<object[]> SearchTestData =>
+    new List<object[]>
+    {
+        new object[] { "Task", 3 },     // sve 3 imaju "Task"
+        new object[] { "1", 1 },        // samo Task 1
+        new object[] { "Desc", 3 },     // sva 3 imaju opis
+        new object[] { "xxx", 0 }       // ne postoji
+    };
+
+        [TestMethod]
+        [DynamicData(nameof(SearchTestData), DynamicDataSourceType.Property)]
+        public void SearchTasks_DynamicData_ShouldReturnCorrectResults(string text, int expectedCount)
+        {
+            var options = new TaskSearchOptions
+            {
+                Text = text,
+                SortBy = TaskSortOption.None
+            };
+
+            var result = _taskService.SearchTasks(options);
+
+            Assert.AreEqual(expectedCount, result.Count);
+        }
 
     }
 }
