@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using TeamTaskManager.Model;
 using TeamTaskManager.Repository;
@@ -9,7 +10,7 @@ using TaskStatus = TeamTaskManager.Model.TaskStatus;
 
 namespace TeamTaskManager
 {
-   
+    [ExcludeFromCodeCoverage]
     class Program
     {
         static TaskService taskService;

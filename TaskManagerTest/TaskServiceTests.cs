@@ -248,6 +248,164 @@ namespace TaskManagerTest
             Assert.AreEqual(expectedCount, result.Count);
         }
 
+        [TestMethod]
+        public void GetOverdueTasks_ShouldReturnOnlyOverdueAndNotDone()
+        {
+            var repo = new InMemoryTaskRepository();
+
+            repo.AddTask(new Task { Id = 1, DueDate = DateTime.Now.AddDays(-1), Status = TaskStatus.ToDo });
+            repo.AddTask(new Task { Id = 2, DueDate = DateTime.Now.AddDays(-1), Status = TaskStatus.Done });
+            repo.AddTask(new Task { Id = 3, DueDate = DateTime.Now.AddDays(2), Status = TaskStatus.InProgress });
+            repo.AddTask(new Task { Id = 4, DueDate = null, Status = TaskStatus.ToDo });
+
+            var service = new TaskService(repo);
+
+            var overdue = service.GetOverdueTasks();
+
+            Assert.AreEqual(1, overdue.Count);
+            Assert.AreEqual(1, overdue[0].Id);
+        }
+        [TestMethod]
+        public void SearchTasks_FilterByAssignedUser()
+        {
+            var options = new TaskSearchOptions
+            {
+                AssignedToUserId = 3
+            };
+
+            var result = _taskService.SearchTasks(options);
+
+            Assert.AreEqual(2, result.Count);
+        }
+        [TestMethod]
+        public void SearchTasks_FilterByPriority()
+        {
+            var options = new TaskSearchOptions
+            {
+                Priority = TaskPriority.High
+            };
+
+            var result = _taskService.SearchTasks(options);
+
+            Assert.AreEqual(2, result.Count);
+        }
+        [TestMethod]
+        public void SearchTasks_OnlyNotOverdue_ShouldExcludeExpired()
+        {
+            var options = new TaskSearchOptions
+            {
+                OnlyNotOverdue = true
+            };
+
+            var result = _taskService.SearchTasks(options);
+
+            // task 3 is overdue in your setup
+            Assert.IsFalse(result.Any(t => t.Id == 3));
+        }
+        [TestMethod]
+        public void SearchTasks_SortByDueDateAsc()
+        {
+            var options = new TaskSearchOptions
+            {
+                SortBy = TaskSortOption.ByDueDateAsc
+            };
+
+            var result = _taskService.SearchTasks(options);
+
+            Assert.IsTrue(result[0].DueDate <= result[1].DueDate);
+        }
+        [TestMethod]
+        public void SearchTasks_SortByPriorityDesc()
+        {
+            var options = new TaskSearchOptions
+            {
+                SortBy = TaskSortOption.ByPriorityDesc
+            };
+
+            var result = _taskService.SearchTasks(options);
+
+            Assert.IsTrue(result.First().Priority >= result.Last().Priority);
+        }
+        [TestMethod]
+        public void SearchTasks_SortByCreatedDateDesc()
+        {
+            var options = new TaskSearchOptions
+            {
+                SortBy = TaskSortOption.ByCreatedDateDesc
+            };
+
+            var result = _taskService.SearchTasks(options);
+
+            Assert.IsTrue(result.First().CreatedDate >= result.Last().CreatedDate);
+        }
+        [TestMethod]
+        public void BulkUpdateStatus_ValidIds_ShouldUpdateAll()
+        {
+            var ids = new List<int> { 1, 2 };
+
+            int updated = _taskService.BulkUpdateStatus(ids, TaskStatus.Done);
+
+            Assert.AreEqual(2, updated);
+            Assert.IsTrue(_taskService.GetAllTasks().All(t => t.Id <= 2 ? t.Status == TaskStatus.Done : true));
+        }
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void BulkUpdateStatus_EmptyList_ShouldThrow()
+        {
+            _taskService.BulkUpdateStatus(new List<int>(), TaskStatus.Done);
+        }
+        [TestMethod]
+        [ExpectedException(typeof(KeyNotFoundException))]
+        public void BulkUpdateStatus_IdNotFound_ShouldThrow()
+        {
+            _taskService.BulkUpdateStatus(new List<int> { 999 }, TaskStatus.Done);
+        }
+        [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public void BulkUpdateStatus_TaskAlreadyDone_ShouldThrow()
+        {
+            _taskService.UpdateTaskStatus(1, TaskStatus.Done);
+
+            _taskService.BulkUpdateStatus(new List<int> { 1 }, TaskStatus.InProgress);
+        }
+        [TestMethod]
+        public void SeedDemoData_ShouldCreateThreeTasks()
+        {
+            var repo = new InMemoryTaskRepository();
+            var service = new TaskService(repo);
+
+            service.SeedDemoData();
+
+            Assert.AreEqual(3, service.GetAllTasks().Count);
+        }
+        [TestMethod]
+        public void GetReport_ShouldReturnCorrectCounts()
+        {
+            var report = _taskService.GetReport();
+
+            Assert.AreEqual(3, report.Total);
+            Assert.AreEqual(2, report.Todo);
+            Assert.AreEqual(1, report.InProgress);
+            Assert.AreEqual(2, report.High);
+        }
+
+
+
+        //MOQ TEST
+        [TestMethod]
+        public void CreateTask_ShouldCallRepositoryAddTask()
+        {
+            // Arrange
+            var mockRepo = new Mock<ITaskRepository>();
+            var service = new TaskService(mockRepo.Object);
+
+            // Act
+            service.CreateTask("Test", "Opis", TaskPriority.High, 3, 1);
+
+            // Assert
+            mockRepo.Verify(r => r.AddTask(It.IsAny<Task>()), Times.Once);
+        }
+
 
 
     }

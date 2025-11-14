@@ -187,5 +187,24 @@ namespace TaskManagerTest
             var result = _analyzer.PredictDelayRisk(task);
             Assert.AreEqual("NIZAK RIZIK", result);
         }
+        [TestMethod]
+        public void GetOverdueTasks_ShouldReturnOnlyOverdueAndNotDone()
+        {
+            var repo = new InMemoryTaskRepository();
+
+            repo.AddTask(new Task { Id = 1, DueDate = DateTime.Now.AddDays(-1), Status = TaskStatus.ToDo });
+            repo.AddTask(new Task { Id = 2, DueDate = DateTime.Now.AddDays(-1), Status = TaskStatus.Done });
+            repo.AddTask(new Task { Id = 3, DueDate = DateTime.Now.AddDays(2), Status = TaskStatus.InProgress });
+            repo.AddTask(new Task { Id = 4, DueDate = null, Status = TaskStatus.ToDo });
+
+            var service = new TaskService(repo);
+
+            var overdue = service.GetOverdueTasks();
+
+            Assert.AreEqual(1, overdue.Count);
+            Assert.AreEqual(1, overdue[0].Id);
+        }
+
+
     }
 }
