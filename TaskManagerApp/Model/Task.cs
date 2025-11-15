@@ -17,5 +17,7 @@ namespace TeamTaskManager.Model
         public DateTime? DueDate { get; set; }
         public int AssignedToUserId { get; set; }
         public int CreatedByUserId { get; set; }
+        public bool IsStarred { get; set; }
+
     }
 }

@@ -7,6 +7,7 @@ using TaskStatus = TeamTaskManager.Model.TaskStatus;
 
 namespace TeamTaskManager.Repository
 {
+
     public class InMemoryTaskRepository : ITaskRepository
     {
         private List<Task> tasks = new List<Task>();

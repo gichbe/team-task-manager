@@ -12,6 +12,63 @@ namespace TeamTaskManager.Service
     {
         private readonly ITaskRepository repository;
         private readonly List<User> users;
+        private readonly ICommentRepository commentRepo;
+
+        public TaskService(ITaskRepository repo, ICommentRepository commentRepo = null)
+        {
+            this.repository = repo;
+            this.commentRepo = commentRepo ?? new InMemoryCommentRepository();
+            users = InitializeUsers();
+        }
+        public void AddComment(int taskId, int userId, string text)
+        {
+            var task = repository.GetTaskById(taskId)
+                ?? throw new ArgumentException($"Zadatak {taskId} ne postoji.");
+
+            var user = GetUserById(userId)
+                ?? throw new ArgumentException($"Korisnik {userId} ne postoji.");
+
+            var comment = new Comment
+            {
+                TaskId = taskId,
+                UserId = userId,
+                Text = text
+            };
+
+            commentRepo.AddComment(comment);
+        }
+
+        public void StarTask(int taskId)
+        {
+            var task = repository.GetTaskById(taskId)
+                ?? throw new ArgumentException("Zadatak ne postoji.");
+
+            task.IsStarred = true;
+            repository.UpdateTask(task);
+        }
+
+        public void UnstarTask(int taskId)
+        {
+            var task = repository.GetTaskById(taskId)
+                ?? throw new ArgumentException("Zadatak ne postoji.");
+
+            task.IsStarred = false;
+            repository.UpdateTask(task);
+        }
+
+        public List<Task> GetStarredTasks()
+        {
+            return repository.GetAllTasks()
+                             .Where(t => t.IsStarred)
+                             .ToList();
+        }
+
+
+        public List<Comment> GetComments(int taskId)
+        {
+            return commentRepo.GetCommentsForTask(taskId);
+        }
+
 
         public TaskService(ITaskRepository repository)
         {

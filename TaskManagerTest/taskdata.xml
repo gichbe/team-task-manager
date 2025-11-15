@@ -1,0 +1,6 @@
+﻿<Tasks>
+	<Task Id="1" Title="XML Task A" Priority="1" Expected="ToDo" />
+	<Task Id="2" Title="XML Task B" Priority="3" Expected="InProgress" />
+	<Task Id="3" Title="XML Task C" Priority="4" Expected="Testing" />
+</Tasks>
+
