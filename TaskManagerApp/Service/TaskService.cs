@@ -69,13 +69,6 @@ namespace TeamTaskManager.Service
             return commentRepo.GetCommentsForTask(taskId);
         }
 
-
-        public TaskService(ITaskRepository repository)
-        {
-            this.repository = repository;
-            users = InitializeUsers();
-        }
-
         private List<User> InitializeUsers()
         {
             return new List<User>

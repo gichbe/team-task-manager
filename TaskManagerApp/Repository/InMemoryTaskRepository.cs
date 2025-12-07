@@ -54,6 +54,9 @@ namespace TeamTaskManager.Repository
                 existing.Priority = task.Priority;
                 existing.DueDate = task.DueDate;
                 existing.AssignedToUserId = task.AssignedToUserId;
+                existing.IsStarred = task.IsStarred;
+                existing.CreatedByUserId = task.CreatedByUserId;
+                existing.CreatedDate = task.CreatedDate;
             }
         }
 

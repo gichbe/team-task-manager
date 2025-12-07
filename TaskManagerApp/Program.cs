@@ -20,7 +20,7 @@ namespace TeamTaskManager
         static void Main(string[] args)
         {
             Console.OutputEncoding = System.Text.Encoding.UTF8;
-            
+
             ITaskRepository repository = new InMemoryTaskRepository();
             taskService = new TaskService(repository);
             taskAnalyzer = new TaskAnalyzer(repository);
@@ -57,6 +57,10 @@ namespace TeamTaskManager
                 Console.WriteLine("14. Sažetak zadataka po korisniku");
                 Console.WriteLine("15. Predikcija rizika kašnjenja");
                 Console.WriteLine("16. Izlaz");
+                Console.WriteLine("17. Dodaj komentar");
+                Console.WriteLine("18. Prikaži komentare za zadatak");
+                Console.WriteLine("19. Označi/ukloni favorit");
+                Console.WriteLine("20. Pregled zadataka označenih kao favorit");
                 Console.Write("\nOdabir: ");
 
 
@@ -80,6 +84,10 @@ namespace TeamTaskManager
                     case "14": GetUserSummaryUI(); break;
                     case "15": PredictDelayRiskUI(); break;
                     case "16": running = false; break; // ✅ Izlaz sada posljednji
+                    case "17": AddCommentUI(); break;
+                    case "18": ViewCommentsUI(); break;
+                    case "19": ToggleFavoriteUI(); break;
+                    case "20": ViewStarredTasksUI(); break;
                     default:
                         Console.WriteLine("Neispravan unos!");
                         Console.ReadKey();
@@ -95,13 +103,13 @@ namespace TeamTaskManager
             Console.WriteLine("═══════════════════════════════════════════");
             Console.WriteLine("           LOGIN");
             Console.WriteLine("═══════════════════════════════════════════\n");
-            
+
             var users = taskService.GetAllUsers();
             for (int i = 0; i < users.Count; i++)
             {
                 Console.WriteLine($"{i + 1}. {users[i].Name} - {users[i].Role}");
             }
-            
+
             Console.Write("\nOdaberi korisnika (1-4): ");
             if (int.TryParse(Console.ReadLine(), out int userId) && userId >= 1 && userId <= 4)
             {
@@ -183,7 +191,7 @@ namespace TeamTaskManager
 
             try
             {
-                taskService.CreateTask(title, description, (TaskPriority)priorityChoice, 
+                taskService.CreateTask(title, description, (TaskPriority)priorityChoice,
                                       assignedTo, currentUser.Id, dueDate);
                 Console.WriteLine("\n✓ Zadatak uspješno kreiran!");
             }
@@ -204,7 +212,7 @@ namespace TeamTaskManager
 
             var tasks = taskService.GetRepository().GetAllTasks();
             DisplayTasks(tasks);
-            
+
             Console.ReadKey();
         }
 
@@ -217,7 +225,7 @@ namespace TeamTaskManager
 
             var tasks = taskService.GetRepository().GetTasksByUser(currentUser.Id);
             DisplayTasks(tasks);
-            
+
             Console.ReadKey();
         }
 
@@ -233,8 +241,8 @@ namespace TeamTaskManager
             Console.WriteLine("3. Testiranje");
             Console.WriteLine("4. Završeno");
             Console.Write("\nOdabir: ");
-            
-            if (int.TryParse(Console.ReadLine(), out int statusChoice) && 
+
+            if (int.TryParse(Console.ReadLine(), out int statusChoice) &&
                 statusChoice >= 1 && statusChoice <= 4)
             {
                 var tasks = taskService.GetRepository()
@@ -242,7 +250,7 @@ namespace TeamTaskManager
                 Console.WriteLine();
                 DisplayTasks(tasks);
             }
-            
+
             Console.ReadKey();
         }
 
@@ -266,8 +274,8 @@ namespace TeamTaskManager
                     Console.WriteLine("3. Testiranje");
                     Console.WriteLine("4. Završeno");
                     Console.Write("\nOdabir: ");
-                    
-                    if (int.TryParse(Console.ReadLine(), out int newStatus) && 
+
+                    if (int.TryParse(Console.ReadLine(), out int newStatus) &&
                         newStatus >= 1 && newStatus <= 4)
                     {
                         taskService.UpdateTaskStatus(taskId, (TaskStatus)newStatus);
@@ -279,7 +287,7 @@ namespace TeamTaskManager
                     Console.WriteLine("\n✗ Zadatak ne postoji!");
                 }
             }
-            
+
             Console.ReadKey();
         }
 
@@ -302,7 +310,7 @@ namespace TeamTaskManager
                     Console.WriteLine("\n✗ Zadatak ne postoji!");
                 }
             }
-            
+
             Console.ReadKey();
         }
 
@@ -318,15 +326,15 @@ namespace TeamTaskManager
             Console.WriteLine("3. Visok");
             Console.WriteLine("4. Kritičan");
             Console.Write("\nOdabir: ");
-            
-            if (int.TryParse(Console.ReadLine(), out int priority) && 
+
+            if (int.TryParse(Console.ReadLine(), out int priority) &&
                 priority >= 1 && priority <= 4)
             {
                 var tasks = taskService.GetTasksByPriority((TaskPriority)priority);
                 Console.WriteLine();
                 DisplayTasks(tasks);
             }
-            
+
             Console.ReadKey();
         }
 
@@ -339,7 +347,7 @@ namespace TeamTaskManager
 
             var tasks = taskService.GetOverdueTasks();
             DisplayTasks(tasks);
-            
+
             Console.ReadKey();
         }
 
@@ -360,6 +368,7 @@ namespace TeamTaskManager
                 Console.WriteLine($"Opis: {task.Description}");
                 Console.WriteLine($"Status: {task.Status}");
                 Console.WriteLine($"Prioritet: {task.Priority}");
+                Console.WriteLine($"Favorit: {(task.IsStarred ? "Da" : "Ne")}");
                 Console.WriteLine($"Dodijeljen: {assignedUser?.Name ?? "N/A"}");
                 Console.WriteLine($"Kreirano: {task.CreatedDate:dd.MM.yyyy}");
                 if (task.DueDate.HasValue)
@@ -374,6 +383,122 @@ namespace TeamTaskManager
                 }
             }
             Console.WriteLine($"───────────────────────────────────────────");
+        }
+
+        static void AddCommentUI()
+        {
+            Console.Clear();
+            Console.WriteLine("═══════════════════════════════════════════");
+            Console.WriteLine("       DODAVANJE KOMENTARA");
+            Console.WriteLine("═══════════════════════════════════════════\n");
+
+            Console.Write("ID zadatka: ");
+            if (int.TryParse(Console.ReadLine(), out int taskId))
+            {
+                Console.Write("Tekst komentara: ");
+                var text = Console.ReadLine();
+                try
+                {
+                    taskService.AddComment(taskId, currentUser.Id, text);
+                    Console.WriteLine("\n✓ Komentar uspješno dodan!");
+                }
+                catch (Exception ex)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"✗ Greška: {ex.Message}");
+                    Console.ResetColor();
+                }
+            }
+            else
+            {
+                Console.WriteLine("✗ Neispravan ID zadatka.");
+            }
+
+            Console.ReadKey();
+        }
+
+        static void ViewCommentsUI()
+        {
+            Console.Clear();
+            Console.WriteLine("═══════════════════════════════════════════");
+            Console.WriteLine("       KOMENTARI ZA ZADATAK");
+            Console.WriteLine("═══════════════════════════════════════════\n");
+
+            Console.Write("ID zadatka: ");
+            if (int.TryParse(Console.ReadLine(), out int taskId))
+            {
+                var comments = taskService.GetComments(taskId);
+                if (comments == null || comments.Count == 0)
+                {
+                    Console.WriteLine("Nema komentara za ovaj zadatak.");
+                }
+                else
+                {
+                    foreach (var c in comments)
+                    {
+                        var user = taskService.GetUserById(c.UserId);
+                        Console.WriteLine($"───────────────────────────────────────────");
+                        Console.WriteLine($"ID: {c.Id}  Korisnik: {user?.Name ?? "Nepoznat"}  Datum: {c.Created:dd.MM.yyyy HH:mm}");
+                        Console.WriteLine($"{c.Text}");
+                    }
+                    Console.WriteLine($"───────────────────────────────────────────");
+                }
+            }
+            else
+            {
+                Console.WriteLine("✗ Neispravan ID zadatka.");
+            }
+
+            Console.ReadKey();
+        }
+
+        static void ToggleFavoriteUI()
+        {
+            Console.Clear();
+            Console.WriteLine("═══════════════════════════════════════════");
+            Console.WriteLine("       OZNAČI / UKLONI FAVORIT");
+            Console.WriteLine("═══════════════════════════════════════════\n");
+
+            Console.Write("ID zadatka: ");
+            if (int.TryParse(Console.ReadLine(), out int taskId))
+            {
+                var task = taskService.GetTaskById(taskId);
+                if (task == null)
+                {
+                    Console.WriteLine("✗ Zadatak ne postoji!");
+                }
+                else
+                {
+                    if (task.IsStarred)
+                    {
+                        taskService.UnstarTask(taskId);
+                        Console.WriteLine("✓ Označeno kao ne-favorit.");
+                    }
+                    else
+                    {
+                        taskService.StarTask(taskId);
+                        Console.WriteLine("✓ Označeno kao favorit.");
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("✗ Neispravan ID zadatka.");
+            }
+
+            Console.ReadKey();
+        }
+
+        static void ViewStarredTasksUI()
+        {
+            Console.Clear();
+            Console.WriteLine("═══════════════════════════════════════════");
+            Console.WriteLine("       FAVORIT ZADACI");
+            Console.WriteLine("═══════════════════════════════════════════\n");
+
+            var tasks = taskService.GetStarredTasks();
+            DisplayTasks(tasks);
+            Console.ReadKey();
         }
         static void AdvancedSearchAndSort()
         {
