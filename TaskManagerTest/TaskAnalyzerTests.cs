@@ -60,9 +60,9 @@ namespace TaskManagerTest
             _analyzer = new TaskAnalyzer(_repo);
         }
 
-        // =======================
+
         //  TESTOVI ZA EvaluateTaskStatus
-        // =======================
+
         [TestMethod]
         public void EvaluateTaskStatus_NullTask_ReturnsInvalid()
         {
@@ -112,9 +112,9 @@ namespace TaskManagerTest
             Assert.AreEqual("On track (High)", result);
         }
 
-        // =======================
+
         //  TESTOVI ZA AnalyzeTeamPerformance
-        // =======================
+
         [TestMethod]
         public void AnalyzeTeamPerformance_EmptyRepo_ReturnsNoData()
         {
@@ -131,9 +131,9 @@ namespace TaskManagerTest
             StringAssert.Contains(result, "Učinkovitost tima");
         }
 
-        // =======================
+
         //  TESTOVI ZA GetTasksSummaryForUser
-        // =======================
+
         [TestMethod]
         public void GetTasksSummaryForUser_NoTasks_ReturnsZero()
         {
@@ -152,9 +152,8 @@ namespace TaskManagerTest
             Assert.IsTrue(result.ContainsKey("Ocjena"));
         }
 
-        // =======================
+
         //  TESTOVI ZA PredictDelayRisk
-        // =======================
         [TestMethod]
         public void PredictDelayRisk_NullTask_ReturnsNepoznat()
         {

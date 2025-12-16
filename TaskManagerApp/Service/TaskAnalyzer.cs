@@ -129,6 +129,25 @@ namespace TeamTaskManager.Service
 
             return "In progress";
         }
+        private static string GetOverdueMessage1(TaskPriority priority)
+        {
+            if (priority == TaskPriority.Critical)
+                return "CRITICAL - Overdue!";
+            if (priority == TaskPriority.High)
+                return "High Priority Overdue";
+            if (priority == TaskPriority.Medium)
+                return "Medium Priority Overdue";
+            return "Overdue";
+        }
+
+        private static string GetOnTrackMessage1(TaskPriority priority)
+        {
+            if (priority == TaskPriority.High || priority == TaskPriority.Critical)
+                return "On track (High)";
+            if (priority == TaskPriority.Low)
+                return "On track (Low)";
+            return "On track (Normal)";
+        }
         public string EvaluateTaskStatus_T3(Task task)
         {
             if (task == null) return "Invalid";
@@ -149,12 +168,42 @@ namespace TeamTaskManager.Service
             bool isFutureInProgress = due > now && status == TaskStatus.InProgress;
 
             if (isOverdue)
-                return GetOverdueMessage(priority);
+                return GetOverdueMessage1(priority);
 
             if (isFutureInProgress)
-                return GetOnTrackMessage(priority);
+                return GetOnTrackMessage1(priority);
 
             return "In progress";
+        }
+        public string EvaluateTaskStatus_Ref(Task task)
+        {
+            if (task == null) return "Invalid";
+
+            if (task.Status == TaskStatus.Done)
+                return "Completed";
+
+            if (!task.DueDate.HasValue)
+                return "No deadline";
+
+            var now = DateTime.Now;
+
+            if (IsOverdue(task, now))
+                return GetOverdueMessage(task.Priority);
+
+            if (IsOnTrack(task, now))
+                return GetOnTrackMessage(task.Priority);
+
+            return "In progress";
+        }
+
+        private static bool IsOverdue(Task task, DateTime now)
+        {
+            return task.DueDate!.Value < now && task.Status != TaskStatus.Done;
+        }
+
+        private static bool IsOnTrack(Task task, DateTime now)
+        {
+            return task.DueDate!.Value > now && task.Status == TaskStatus.InProgress;
         }
 
         private static string GetOverdueMessage(TaskPriority priority)
@@ -170,12 +219,14 @@ namespace TeamTaskManager.Service
 
         private static string GetOnTrackMessage(TaskPriority priority)
         {
-            if (priority == TaskPriority.High || priority == TaskPriority.Critical)
+            if (priority == TaskPriority.High || TaskPriority.Critical == priority)
                 return "On track (High)";
             if (priority == TaskPriority.Low)
                 return "On track (Low)";
             return "On track (Normal)";
         }
+
+
 
 
 
